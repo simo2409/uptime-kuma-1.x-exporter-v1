@@ -6,7 +6,10 @@ Script Python per esportare la lista dei monitor da un'istanza **Uptime Kuma v1.
 
 - Si autentica all'istanza Uptime Kuma usando **username e password**.
 - Scarica l'elenco completo dei monitor (attivi e non) tramite Socket.IO.
-- Stampa i dettagli a schermo e salva il JSON grezzo in `monitors.json`.
+- Stampa i dettagli a schermo.
+- Genera i file di output:
+  1. **`YYYY-MM-DD_monitors.json`** — lista "light" di tutti i monitor (inclusi i gruppi) con solo *id, nome, tipo, attivo, url e appartenenza al gruppo*; **senza** i settings completi.
+  2. Cartella **`monitors/`** — un file JSON per ogni monitor, nominato `YYYY-MM-DD_<nome-monitor>.json`.
 
 ## Requisiti
 
@@ -30,9 +33,12 @@ Per questo lo script richiede **username** e **password** di un utente abilitato
    {
      "host": "https://uptime.tuo-dominio.com",
      "username": "admin",
-     "password": "your-password"
+     "password": "your-password",
+     "output_dir": "./output"
    }
    ```
+
+   - `output_dir` è opzionale: se omesso i file vengono scritti nella directory corrente.
 
 ## Esecuzione
 
@@ -43,4 +49,13 @@ uv run python main.py
 
 ## Output
 
-Oltre alla stampa a schermo, viene generato il file `monitors.json` contenente l'array completo dei monitor recuperato dall'API.
+Supponendo `output_dir` = `./output` e data odierna `2026-05-30`:
+
+```
+output/
+├── 2026-05-30_monitors.json       # lista light di tutti i monitor
+└── monitors/
+    ├── 2026-05-30_Google.json      # parametri completi del singolo monitor
+    ├── 2026-05-30_API_Production.json
+    └── ...
+```

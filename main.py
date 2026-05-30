@@ -2,7 +2,9 @@
 """Script per scaricare la lista dei monitor da Uptime Kuma (v1.23.x) via Socket.IO API."""
 
 import json
+import re
 import sys
+from datetime import datetime
 from pathlib import Path
 
 from uptime_kuma_api import UptimeKumaApi
@@ -38,6 +40,13 @@ def load_config(path: Path = Path("config.json")) -> dict:
     return config
 
 
+def sanitize_filename(name: str) -> str:
+    """Rende una stringa sicura da usare come nome file."""
+    safe = re.sub(r'[\\/*?:"<>| ]+', "_", name)
+    safe = safe.strip("._")
+    return safe[:100]
+
+
 def fetch_monitors(host: str, username: str, password: str) -> list[dict]:
     """Recupera la lista di tutti i monitor (attivi e non) dall'API Socket.IO di Uptime Kuma."""
     try:
@@ -58,11 +67,65 @@ def fetch_monitors(host: str, username: str, password: str) -> list[dict]:
     return monitors
 
 
+def monitor_summary(monitor: dict) -> dict:
+    """Estrae i campi essenziali di un monitor (senza i settings completi)."""
+    return {
+        "id": monitor.get("id"),
+        "name": monitor.get("name"),
+        "type": str(monitor.get("type", "")),
+        "active": monitor.get("active"),
+        "url": monitor.get("url"),
+        "parent": monitor.get("parent"),
+        "childrenIDs": monitor.get("childrenIDs", []),
+    }
+
+
+def save_monitors(monitors: list[dict], output_dir: Path) -> None:
+    """Salva la lista monitor e i singoli file per ciascun monitor."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    # 1. File principale con la lista light (solo id, nome, tipo, attivo, url, gruppo)
+    list_path = output_dir / f"{today}_monitors.json"
+    with list_path.open("w", encoding="utf-8") as f:
+        json.dump(
+            [monitor_summary(m) for m in monitors],
+            f,
+            indent=2,
+            ensure_ascii=False,
+            default=str,
+        )
+    print(f"Lista monitor salvata in: {list_path.resolve()}")
+
+    # 2. Cartella con i singoli monitor
+    monitors_dir = output_dir / "monitors"
+    monitors_dir.mkdir(parents=True, exist_ok=True)
+
+    seen_names: set[str] = set()
+    for monitor in monitors:
+        name = monitor.get("name", "unknown")
+        safe_name = sanitize_filename(name)
+
+        # Gestione nomi duplicati
+        file_name = f"{today}_{safe_name}.json"
+        if file_name in seen_names:
+            monitor_id = monitor.get("id", "unknown")
+            file_name = f"{today}_{safe_name}_{monitor_id}.json"
+        seen_names.add(file_name)
+
+        file_path = monitors_dir / file_name
+        with file_path.open("w", encoding="utf-8") as f:
+            json.dump(monitor, f, indent=2, ensure_ascii=False, default=str)
+
+    print(f"Singoli monitor salvati in: {monitors_dir.resolve()} ({len(monitors)} file)")
+
+
 def main() -> None:
     config = load_config()
     host = config["host"]
     username = config["username"]
     password = config["password"]
+    output_dir = Path(config.get("output_dir", "."))
 
     print(f"Connessione a Uptime Kuma: {host} ...")
     monitors = fetch_monitors(host, username, password)
@@ -81,11 +144,7 @@ def main() -> None:
         print(f"  URL: {url}")
         print("-" * 40)
 
-    # Salva anche su file
-    output_path = Path("monitors.json")
-    with output_path.open("w", encoding="utf-8") as f:
-        json.dump(monitors, f, indent=2, ensure_ascii=False)
-    print(f"\nLista monitor salvata in: {output_path.resolve()}")
+    save_monitors(monitors, output_dir)
 
 
 if __name__ == "__main__":

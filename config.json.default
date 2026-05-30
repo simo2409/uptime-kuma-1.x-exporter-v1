@@ -1,5 +1,6 @@
 {
   "host": "https://uptime.example.com",
   "username": "admin",
-  "password": "your-password"
+  "password": "your-password",
+  "output_dir": "./output"
 }
