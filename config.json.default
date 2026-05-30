@@ -1,4 +1,5 @@
 {
   "host": "https://uptime.example.com",
-  "api_key": "uk1_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  "username": "admin",
+  "password": "your-password"
 }

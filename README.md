@@ -1,17 +1,22 @@
 # uptime-kuma-1-x-exporter-v1
 
-Script Python per esportare la lista dei monitor da un'istanza **Uptime Kuma v1.23.17** (o compatibile v1.x) tramite le API REST ufficiali.
+Script Python per esportare la lista dei monitor da un'istanza **Uptime Kuma v1.23.x** tramite le **API Socket.IO** (l'unica disponibile in questa versione per leggere l'elenco dei monitor).
 
 ## Cosa fa
 
-- Si autentica all'API di Uptime Kuma usando una **API Key**.
-- Scarica l'elenco completo dei monitor (attivi e non).
+- Si autentica all'istanza Uptime Kuma usando **username e password**.
+- Scarica l'elenco completo dei monitor (attivi e non) tramite Socket.IO.
 - Stampa i dettagli a schermo e salva il JSON grezzo in `monitors.json`.
 
 ## Requisiti
 
 - Python >= 3.13
 - [uv](https://docs.astral.sh/uv/) (consigliato per gestire dipendenze e virtualenv)
+
+## ⚠️ Nota importante
+
+In **Uptime Kuma v1.x** l'endpoint REST `/api/monitors` **non esiste**. Le *API Key* create nelle impostazioni servono solo per endpoint read-only come `/metrics` o i badge, ma **non** per ottenere la lista dei monitor.  
+Per questo lo script richiede **username** e **password** di un utente abilitato.
 
 ## Configurazione
 
@@ -24,7 +29,8 @@ Script Python per esportare la lista dei monitor da un'istanza **Uptime Kuma v1.
    ```json
    {
      "host": "https://uptime.tuo-dominio.com",
-     "api_key": "uk1_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+     "username": "admin",
+     "password": "your-password"
    }
    ```
 
